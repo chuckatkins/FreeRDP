@@ -2,11 +2,9 @@
 # Find the Wayland libraries that are needed for UWAC
 #
 #  This module defines the following variables:
-#     WAYLAND_FOUND     - true if UWAC has been found
-#     WAYLAND_LIBS      - Set to the full path to wayland client libraries
-#     WAYLAND_INCLUDE_DIR - Set to the include directories for wayland
-#     XKBCOMMON_LIBS      - Set to the full path to xkbcommon libraries
-#     XKBCOMMON_INCLUDE_DIR - Set to the include directories for xkbcommon
+#     Wayland_FOUND           - true if UWAC has been found
+#     Wayland_LIBRARIES       - Set to the full path to wayland client libraries
+#     Wayland_INCLUDE_DIRS    - Set to the include directories for wayland
 #
 
 #=============================================================================
@@ -25,45 +23,98 @@
 # limitations under the License.
 #=============================================================================
 
+# All components are required
+set(Wayland_FIND_COMPONENTS Scanner Client Cursor)
+foreach(comp IN LISTS Wayland_FIND_COMPONENTS)
+    set(Waylanf_FIND_REQUIREDD_${comp} TRUE)
+endforeach()
+
 find_package(PkgConfig)
 
 if(PKG_CONFIG_FOUND)
-    pkg_check_modules(WAYLAND_SCANNER_PC wayland-scanner)
-    pkg_check_modules(WAYLAND_CLIENT_PC wayland-client)
-		pkg_check_modules(WAYLAND_CURSOR_PC wayland-cursor)
-    pkg_check_modules(XKBCOMMON_PC xkbcommon)
+    pkg_check_modules(PC_Wayland_Scanner wayland-scanner)
+    pkg_check_modules(PC_Wayland_Client wayland-client)
+    pkg_check_modules(PC_Wayland_Cursor wayland-cursor)
 endif()
 
-find_program(WAYLAND_SCANNER wayland-scanner
-    HINTS "${WAYLAND_SCANNER_PC_PREFIX}/bin"
+set(_WaylandScanner_HINTS)
+if(PC_Wayland_Scanner_FOUND)
+  set(_Wayland_Scanner_HINTS ${PC_Wayland_Scanner_PREFIX}/bin)
+endif()
+find_program(Wayland_Scanner_EXECUTABLE wayland-scanner
+    HINTS ${_Wayland_Scanner_HINTS}
 )
 
-find_path(WAYLAND_INCLUDE_DIR wayland-client.h
-    HINTS ${WAYLAND_CLIENT_PC_INCLUDE_DIRS}
+find_path(Wayland_INCLUDE_DIR wayland-client.h
+    HINTS ${PC_Wayland_Client_INCLUDE_DIRS}
 )
 
-find_library(WAYLAND_CLIENT_LIB
-    NAMES "wayland-client"
-    HINTS "${WAYLAND_CLIENT_PC_LIBRARY_DIRS}"
+find_library(Wayland_Client_LIBRARY wayland-client
+    HINTS ${PC_Wayland_Client_LIBRARY_DIRS}
 )
 
-find_library(WAYLAND_CURSOR_LIB
-    NAMES "wayland-cursor"
-		HINTS "${WAYLAND_CURSOR_PC_LIBRARY_DIRS}"
+find_library(Wayland_Cursor_LIBRARY wayland-cursor
+    HINTS ${PC_Wayland_Cursor_LIBRARY_DIRS}
 )
 
-if (WAYLAND_CLIENT_LIB AND WAYLAND_CURSOR_LIB)
-	list(APPEND WAYLAND_LIBS ${WAYLAND_CLIENT_LIB} ${WAYLAND_CURSOR_LIB})
-endif (WAYLAND_CLIENT_LIB AND WAYLAND_CURSOR_LIB)
+set(Wayland_Scanner_FOUND FALSE)
+if(Wayland_Scanner_EXECUTABLE)
+    set(Wayland_Scanner_FOUND TRUE)
+endif()
 
-find_path(XKBCOMMON_INCLUDE_DIR xkbcommon/xkbcommon.h
-    HINTS ${XKBCOMMON_PC_INCLUDE_DIRS}
-)
+set(Wayland_Client_FOUND FALSE)
+set(Wayland_Cursort_FOUND FALSE)
+if(Wayland_INCLUDE_DIR)
+    if(Wayland_Client_LIBRARY)
+        set(Wayland_Client_FOUND TRUE)
+    endif()
+    if(Wayland_Cursor_LIBRARY)
+        set(Wayland_Cursor_FOUND TRUE)
+    endif()
+endif()
 
-find_library(XKBCOMMON_LIBS
-    NAMES xkbcommon
-    HINTS "${XKBCOMMON_PC_LIBRARY_DIRS}"
-)
+find_package(X11 COMPONENTS xkbcommon)
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(WAYLAND DEFAULT_MSG WAYLAND_SCANNER WAYLAND_INCLUDE_DIR WAYLAND_LIBS XKBCOMMON_INCLUDE_DIR XKBCOMMON_LIBS)
+find_package_handle_standard_args(Wayland
+    REQUIRED_VARS Wayland_INCLUDE_DIR X11_xkbcommon_FOUND
+    HANDLE_COMPONENTS
+)
+
+if(Wayland_FOUND)
+    if(NOT TARGET Wayland::Scanner)
+        add_executable(Wayland::Scanner IMPORTED)
+        set_target_properties(Wayland::Scanner PROPERTIES
+            IMPORTED_LOCATION ${Wayland_Scanner_EXECUTABLE}
+        )
+    endif()
+
+    set(Wayland_Client_INCLUDE_DIRS ${Wayland_INCLUDE_DIR})
+    set(Wayland_Client_LIBRARIES ${Wayland_Client_LIBRARY})
+    if(NOT TARGET Wayland::Client)
+        add_library(Wayland::Client UNKNOWN IMPORTED)
+        set_target_properties(Wayland::Client PROPERTIES
+            IMPORTED_LOCATION ${Wayland_Client_LIBRARY}
+            INTERFACE_INCLUDE_DIRECTORIES ${Wayland_INCLUDE_DIR}
+        )
+    endif()
+
+    set(Wayland_Cursor_INCLUDE_DIRS ${Wayland_INCLUDE_DIR})
+    set(Wayland_Cursor_LIBRARIES ${Wayland_Cursor_LIBRARY})
+    if(NOT TARGET Wayland::Cursor)
+        add_library(Wayland::Cursor UNKNOWN IMPORTED)
+        set_target_properties(Wayland::Cursor PROPERTIES
+            IMPORTED_LOCATION ${Wayland_Cursor_LIBRARY}
+            INTERFACE_INCLUDE_DIRECTORIES ${Wayland_INCLUDE_DIR}
+        )
+    endif()
+
+    set(Wayland_INCLUDE_DIRS ${Wayland_INCLUDE_DIR})
+    set(Wayland_LIBRARIES ${Wayland_CLIENT_LIBRARY} ${Wayland_Cursor_LIBRARY})
+    if(NOT TARGET Wayland::Wayland)
+        add_library(Wayland::Wayland INTERFACE IMPORTED)
+        set_target_properties(Wayland::Wayland PROPERTIES
+            INTERFACE_LINK_LIBRARIES "Wayland::Client;Wayland::Cursor"
+        )
+    endif()
+endif()

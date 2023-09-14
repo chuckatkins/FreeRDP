@@ -22,14 +22,14 @@ macro(generate_protocol_file PROTO)
     add_custom_command(
         OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/protocols/${PROTO}-protocol.c"
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/protocols
-	COMMAND ${WAYLAND_SCANNER} code < ${CMAKE_CURRENT_SOURCE_DIR}/../protocols/${PROTO}.xml > ${CMAKE_CURRENT_BINARY_DIR}/protocols/${PROTO}-protocol.c
+        COMMAND Wayland::Scanner code < ${CMAKE_CURRENT_SOURCE_DIR}/../protocols/${PROTO}.xml > ${CMAKE_CURRENT_BINARY_DIR}/protocols/${PROTO}-protocol.c
 	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../protocols/${PROTO}.xml
     )
 
     add_custom_command(
         OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/protocols/${PROTO}-client-protocol.h"
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/protocols
-	COMMAND ${WAYLAND_SCANNER} client-header < ${CMAKE_CURRENT_SOURCE_DIR}/../protocols/${PROTO}.xml > ${CMAKE_CURRENT_BINARY_DIR}/protocols/${PROTO}-client-protocol.h
+        COMMAND Wayland::Scanner client-header < ${CMAKE_CURRENT_SOURCE_DIR}/../protocols/${PROTO}.xml > ${CMAKE_CURRENT_BINARY_DIR}/protocols/${PROTO}-client-protocol.h
 	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../protocols/${PROTO}.xml
     )
 
@@ -47,8 +47,6 @@ generate_protocol_file(keyboard-shortcuts-inhibit-unstable-v1)
 if(FREEBSD)
 	include_directories(${EPOLLSHIM_INCLUDE_DIR})
 endif()
-include_directories(${WAYLAND_INCLUDE_DIR})
-include_directories(${XKBCOMMON_INCLUDE_DIR})
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../include")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/../include")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/protocols")
@@ -78,7 +76,7 @@ if (WITH_LIBRARY_VERSIONING)
 endif()
 
 target_include_directories(${MODULE_NAME} INTERFACE $<INSTALL_INTERFACE:include/uwac${UWAC_API_VERSION}>)
-target_link_libraries(${MODULE_NAME} ${${MODULE_PREFIX}_LIBS} PRIVATE ${WAYLAND_LIBS} ${XKBCOMMON_LIBS} ${EPOLLSHIM_LIBS})
+target_link_libraries(${MODULE_NAME} ${${MODULE_PREFIX}_LIBS} PRIVATE Wayland::Wayland X11::xkbcommon ${EPOLLSHIM_LIBS})
 if (UWAC_HAVE_PIXMAN_REGION)
 	target_link_libraries(${MODULE_NAME} PRIVATE ${pixman_LINK_LIBRARIES})
 else()

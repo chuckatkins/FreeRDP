@@ -19,8 +19,6 @@
 set(MODULE_NAME "wlfreerdp")
 set(MODULE_PREFIX "FREERDP_CLIENT_WAYLAND")
 
-include_directories(${WAYLAND_INCLUDE_DIR})
-
 set(${MODULE_PREFIX}_SRCS
     wlfreerdp.c
 	wlfreerdp.h
@@ -44,7 +42,7 @@ else()
 	include_directories(${UWAC_INCLUDE_DIR})
 endif()
 
-list (APPEND ${MODULE_PREFIX}_LIBS freerdp-client freerdp uwac)
+list (APPEND ${MODULE_PREFIX}_LIBS freerdp-client freerdp uwac Wayland::Wayland)
 
 add_executable(${MODULE_NAME} ${${MODULE_PREFIX}_SRCS})
 
